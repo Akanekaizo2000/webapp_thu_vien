@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIT Smart Library System & AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { mit: { red: '#660000', redDark: '#4A0000', gold: '#F5A623', bg: '#F1F5F9' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #F1F5F9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1E293B; }
+        .arch-container { border: 4px solid #1E293B; border-radius: 10rem 10rem 0 0; background: #FFFFFF; padding: 16px; }
+        .shelf-cell { border: 2px solid #1E293B; transition: all 0.2s ease; cursor: pointer; }
+        .shelf-cell:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <!-- Header MIT -->
+    <header class="bg-gradient-to-r from-mit-redDark via-mit-red to-mit-redDark text-white px-8 py-3.5 shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-br from-mit-gold to-amber-600 text-mit-red font-black text-xl w-10 h-10 rounded-xl shadow-md flex items-center justify-center border border-white/30">M</div>
+                <div>
+                    <h1 class="text-base font-black uppercase tracking-wider text-white">Đại học Công nghệ Miền Đông</h1>
+                    <p class="text-[11px] text-mit-gold font-bold"><i class="fa-solid fa-graduation-cap"></i> Hệ thống Quản lý Thư viện Thông minh & AI</p>
+                </div>
+            </div>
+            <div id="user-info-bar" class="flex items-center gap-2">
+                <button onclick="openAuthModal()" class="bg-mit-gold text-mit-red font-black text-xs px-4 py-2 rounded-xl shadow transition">
+                    <i class="fa-solid fa-right-to-bracket mr-1"></i> Đăng nhập
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b border-slate-200 shadow-xs sticky top-[65px] z-30">
+        <div class="max-w-7xl mx-auto px-8 flex gap-8 text-sm">
+            <button onclick="switchTab('tab-map')" id="tab-btn-map" class="py-3.5 text-mit-red border-b-4 border-mit-red flex items-center gap-2 font-extrabold transition">
+                <i class="fa-solid fa-archway"></i> Sơ đồ Kệ Khung Vòm
+            </button>
+            <button onclick="switchTab('tab-borrow')" id="tab-btn-borrow" class="py-3.5 text-slate-500 hover:text-mit-red flex items-center gap-2 font-bold transition">
+                <i class="fa-solid fa-barcode"></i> Mượn / Trả Sách
+            </button>
+            <button id="tab-btn-admin" onclick="switchTab('tab-admin')" class="py-3.5 text-slate-500 hover:text-mit-red flex items-center gap-2 font-bold transition hidden">
+                <i class="fa-solid fa-file-excel text-emerald-600"></i> Import File Excel (Thủ Thư)
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-1 p-8 max-w-7xl mx-auto w-full space-y-6">
+
+        <!-- TAB 1: SƠ ĐỒ KỆ KHUNG VÒM -->
+        <section id="tab-map" class="space-y-6">
+            <div class="flex flex-wrap justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl shadow-xs">
+                <div class="flex items-center gap-4">
+                    <label class="text-xs font-black text-slate-700">Chọn Kệ Sách:</label>
+                    <select id="rack-select" onchange="renderArchShelf()" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl px-4 py-2 font-bold focus:outline-none">
+                        <option value="6">Kệ 06 (Kho Công Nghệ Thông Tin)</option>
+                        <option value="1">Kệ 01</option><option value="2">Kệ 02</option><option value="3">Kệ 03</option>
+                        <option value="4">Kệ 04</option><option value="5">Kệ 05</option><option value="7">Kệ 07</option>
+                        <option value="8">Kệ 08</option><option value="9">Kệ 09</option><option value="10">Kệ 10</option>
+                    </select>
+                    <select id="side-select" onchange="renderArchShelf()" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl px-4 py-2 font-bold focus:outline-none">
+                        <option value="LEFT">Mặt Trái (LEFT)</option>
+                        <option value="RIGHT">Mặt Phải (RIGHT)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 p-8 rounded-2xl shadow-md">
+                <h3 id="arch-shelf-title" class="text-center text-base font-black text-mit-red mb-6 uppercase tracking-wider"></h3>
+                <div class="max-w-2xl mx-auto arch-container border-4 border-slate-900 rounded-t-full p-4 bg-slate-50">
+                    <div class="grid grid-cols-12 gap-3 min-h-[500px]">
+                        <div class="col-span-3 flex flex-col justify-between gap-1">
+                            <div class="text-[10px] font-black text-center text-slate-500 mb-1">CỘT TRÁI</div>
+                            <div id="left-column" class="flex flex-col gap-1 flex-1 justify-between"></div>
+                        </div>
+                        <div class="col-span-6 flex flex-col justify-between items-center p-2 border-x-2 border-dashed border-slate-300">
+                            <div class="text-center mt-6">
+                                <i class="fa-solid fa-archway text-6xl text-slate-300"></i>
+                                <p class="text-xs font-black text-slate-400 mt-2">VÒM KỆ THƯ VIỆN MIT</p>
+                            </div>
+                            <div class="w-full space-y-1">
+                                <p class="text-[10px] font-black text-center text-slate-600">KỆ 4 Ô CHÂN VÒM</p>
+                                <div class="grid grid-cols-2 gap-1 border-2 border-slate-900 p-1 bg-white rounded-md">
+                                    <div class="shelf-cell p-2 text-center text-[10px] font-bold bg-slate-100">Ô Chân 1</div>
+                                    <div class="shelf-cell p-2 text-center text-[10px] font-bold bg-slate-100">Ô Chân 2</div>
+                                    <div class="shelf-cell p-2 text-center text-[10px] font-bold bg-slate-100">Ô Chân 3</div>
+                                    <div class="shelf-cell p-2 text-center text-[10px] font-bold bg-slate-100">Ô Chân 4</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-span-3 flex flex-col justify-between gap-1">
+                            <div class="text-[10px] font-black text-center text-slate-500 mb-1">CỘT PHẢI</div>
+                            <div id="right-column" class="flex flex-col gap-1 flex-1 justify-between"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="shelf-detail-box" class="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs hidden">
+                <h4 id="selected-shelf-code" class="text-sm font-black text-mit-red border-b border-slate-100 pb-2"></h4>
+                <div id="selected-shelf-books" class="mt-3 space-y-2"></div>
+            </div>
+        </section>
+
+        <!-- TAB 2: MƯỢN TRẢ -->
+        <section id="tab-borrow" class="hidden max-w-xl mx-auto space-y-4">
+            <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs space-y-3">
+                <h3 class="text-sm font-black text-slate-800">Mượn Sách Qua Mã Vạch</h3>
+                <input type="text" id="borrow-barcode" placeholder="Mã vạch sách" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold">
+                <input type="text" id="borrow-student" placeholder="Mã số sinh viên (MSSV)" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold">
+                <button onclick="handleBorrow()" class="w-full bg-mit-red text-white font-extrabold py-3 rounded-xl text-xs">Mượn Sách</button>
+            </div>
+            <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs space-y-3">
+                <h3 class="text-sm font-black text-slate-800">Trả Sách & Tính Phí Phạt Quá Hạn</h3>
+                <input type="text" id="return-barcode" placeholder="Mã vạch sách trả" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold">
+                <button onclick="handleReturn()" class="w-full bg-emerald-600 text-white font-extrabold py-3 rounded-xl text-xs">Xác Nhận Trả</button>
+            </div>
+        </section>
+
+        <!-- TAB 3: IMPORT EXCEL DÀNH CHO THỦ THƯ -->
+        <section id="tab-admin" class="hidden max-w-xl mx-auto bg-white border border-slate-200 p-8 rounded-2xl shadow-md space-y-5">
+            <h2 class="text-base font-black text-mit-red flex items-center gap-2">
+                <i class="fa-solid fa-file-excel text-emerald-600"></i> Import Danh Mục Sách Từ File Excel
+            </h2>
+            <p class="text-xs text-slate-500">Tải file Excel đã lưu từ máy tính về để nạp trực tiếp danh mục vào hệ thống CSDL.</p>
+            <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-mit-red file:text-white">
+            <button onclick="uploadExcel()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl text-xs shadow">Nạp Toàn Bộ Sách Vào Ô Kệ</button>
+        </section>
+
+    </main>
+
+    <!-- AI CHATBOT WIDGET GÓC PHẢI -->
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <div id="ai-chatbox" class="hidden w-96 h-[480px] bg-white border-2 border-mit-red rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-3">
+            <div class="bg-gradient-to-r from-mit-red to-mit-redDark text-white p-3.5 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-robot text-mit-gold text-lg"></i>
+                    <span class="font-black text-xs">Trợ Lý AI Thư Viện MIT</span>
+                </div>
+                <button onclick="toggleChatbox()" class="text-white hover:text-mit-gold"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto text-xs space-y-3 bg-slate-50">
+                <div class="bg-white p-3 rounded-xl border border-slate-200 text-slate-700">
+                    👋 Xin chào! Mình là AI Trợ Lý Thư Viện. Bạn cần tìm tên sách nào hoặc vị trí ở đâu cứ hỏi mình nhé!
+                </div>
+            </div>
+            <div class="p-3 border-t border-slate-200 bg-white flex gap-2">
+                <input type="text" id="chat-input" onkeypress="if(event.key==='Enter') sendAIChat()" placeholder="Hỏi AI vị trí sách..." class="flex-1 bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:outline-none">
+                <button onclick="sendAIChat()" class="bg-mit-red text-white px-4 rounded-xl font-bold text-xs"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <button onclick="toggleChatbox()" class="bg-mit-red hover:bg-mit-redDark text-mit-gold w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl border-2 border-mit-gold transition hover:scale-110">
+            <i class="fa-solid fa-comments"></i>
+        </button>
+    </div>
+
+    <!-- MODAL ĐĂNG NHẬP -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white border border-slate-200 p-8 rounded-2xl max-w-sm w-full shadow-2xl relative space-y-4">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h2 class="text-base font-black text-mit-red">Đăng nhập hệ thống</h2>
+            <div>
+                <label class="text-[11px] font-bold text-slate-500">Mã Độc giả / Thủ thư / Admin</label>
+                <input type="text" id="auth-studentid" placeholder="VD: TT001, SV2026001" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold mt-1">
+            </div>
+            <div>
+                <label class="text-[11px] font-bold text-slate-500">Mật khẩu</label>
+                <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs mt-1">
+            </div>
+            <button onclick="submitLogin()" class="w-full bg-mit-red hover:bg-mit-redDark text-white font-extrabold py-3.5 rounded-xl text-xs transition shadow">
+                Xác Nhận Đăng Nhập
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let rawShelvesData = [];
+        let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+
+        function updateUIAuth() {
+            const bar = document.getElementById('user-info-bar');
+            const adminTab = document.getElementById('tab-btn-admin');
+            if (currentUser) {
+                bar.innerHTML = `
+                    <div class="flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 rounded-xl text-xs text-white">
+                        <span class="font-bold">${currentUser.full_name}</span>
+                        <span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-mit-gold text-mit-red">${currentUser.role}</span>
+                    </div>
+                    <button onclick="logout()" class="text-white/80 hover:text-white text-xs font-bold p-2"><i class="fa-solid fa-power-off"></i></button>
+                `;
+                adminTab.classList.toggle('hidden', currentUser.role === 'DOC_GIA');
+            } else {
+                bar.innerHTML = `
+                    <button onclick="openAuthModal()" class="bg-mit-gold text-mit-red font-black text-xs px-4 py-2 rounded-xl shadow transition">
+                        <i class="fa-solid fa-right-to-bracket mr-1"></i> Đăng nhập
+                    </button>
+                `;
+                adminTab.classList.add('hidden');
+            }
+        }
+
+        function openAuthModal() { document.getElementById('auth-modal').classList.remove('hidden'); }
+        function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+
+        async function submitLogin() {
+            const student_id = document.getElementById('auth-studentid').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+            if (!student_id || !password) return alert("Vui lòng nhập đủ thông tin!");
+
+            const res = await fetch(`${API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ student_id, password })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                closeAuthModal();
+                updateUIAuth();
+                alert(`🎉 Xin chào ${currentUser.full_name}!`);
+            } else { alert(`❌ ${data.detail}`); }
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            currentUser = null;
+            updateUIAuth();
+            switchTab('tab-map');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(tab).classList.remove('hidden');
+            if (tab === 'tab-map') renderArchShelf();
+        }
+
+        async function loadShelvesData() {
+            try {
+                const res = await fetch(`${API_URL}/api/shelves`);
+                const result = await res.json();
+                rawShelvesData = result.data || [];
+                renderArchShelf();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderArchShelf() {
+            const rack = document.getElementById('rack-select').value;
+            const side = document.getElementById('side-select').value;
+            const sideCode = side === 'LEFT' ? 'L' : 'R';
+
+            document.getElementById('arch-shelf-title').innerText = `Sơ đồ Mặt Cắt Kệ Sách Khung Vòm - Kệ ${String(rack).padStart(2,'0')} (${side === 'LEFT' ? 'Mặt Trái' : 'Mặt Phải'})`;
+
+            const leftCol = document.getElementById('left-column');
+            const rightCol = document.getElementById('right-column');
+            leftCol.innerHTML = ''; rightCol.innerHTML = '';
+
+            for (let tier = 10; tier >= 1; tier--) {
+                const locCode = `K${String(rack).padStart(2,'0')}-${sideCode}-T${String(tier).padStart(2,'0')}`;
+                const books = rawShelvesData.filter(item => item.location_code === locCode && item.barcode);
+                const count = books.length;
+                const cellBg = count > 0 ? 'bg-emerald-600 text-white font-black' : 'bg-white text-slate-800 font-bold border-slate-900';
+
+                const cellHTML = `
+                    <div onclick="showShelfDetail('${locCode}')" class="shelf-cell p-1.5 rounded border-2 ${cellBg} text-[11px] flex justify-between items-center cursor-pointer hover:scale-105 transition shadow-xs">
+                        <span>T${tier}</span>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${count>0?'bg-white text-emerald-800':'bg-slate-200'}">${count} sách</span>
+                    </div>
+                `;
+                leftCol.innerHTML += cellHTML;
+                rightCol.innerHTML += cellHTML;
+            }
+        }
+
+        function showShelfDetail(locCode) {
+            const books = rawShelvesData.filter(item => item.location_code === locCode && item.barcode);
+            const box = document.getElementById('shelf-detail-box');
+            box.classList.remove('hidden');
+            document.getElementById('selected-shelf-code').innerText = `Danh sách sách tại Ô Kệ: ${locCode} (${books.length} cuốn)`;
+            
+            const list = document.getElementById('selected-shelf-books');
+            list.innerHTML = books.length === 0 ? '<p class="text-xs text-slate-400 italic">Ô kệ này hiện tại đang trống.</p>' :
+                books.map(b => `
+                    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs flex justify-between items-center">
+                        <div><p class="font-bold text-slate-800">📚 ${b.book_title}</p><p class="text-[10px] text-slate-500">Mã vạch: ${b.barcode}</p></div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">${b.copy_status}</span>
+                    </div>
+                `).join('');
+        }
+
+        function toggleChatbox() { document.getElementById('ai-chatbox').classList.toggle('hidden'); }
+
+        async function sendAIChat() {
+            const input = document.getElementById('chat-input');
+            const q = input.value.trim(); if (!q) return;
+            const messages = document.getElementById('chat-messages');
+
+            messages.innerHTML += `<div class="bg-mit-red text-white p-2.5 rounded-xl ml-auto max-w-[80%] text-right font-bold">${q}</div>`;
+            input.value = '';
+
+            const res = await fetch(`${API_URL}/api/chatbot/query?question=${encodeURIComponent(q)}`);
+            const data = await res.json();
+
+            messages.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 text-slate-800">${data.answer}</div>`;
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        async function handleBorrow() {
+            const barcode = document.getElementById('borrow-barcode').value.trim();
+            const student_id = document.getElementById('borrow-student').value.trim();
+            if (!barcode || !student_id) return alert("Vui lòng nhập đủ thông tin!");
+
+            const res = await fetch(`${API_URL}/api/borrow`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ barcode, student_id })
+            });
+            const data = await res.json();
+            res.ok ? (alert(`🎉 ${data.message}`), loadShelvesData()) : alert(`❌ ${data.detail}`);
+        }
+
+        async function handleReturn() {
+            const barcode = document.getElementById('return-barcode').value.trim();
+            if (!barcode) return alert("Vui lòng nhập mã vạch!");
+
+            const res = await fetch(`${API_URL}/api/return?barcode=${barcode}`, { method: 'POST' });
+            const data = await res.json();
+            res.ok ? (alert(`🎉 ${data.message}\n📍 Định vị trả về ô kệ: ${data.return_to_location}`), loadShelvesData()) : alert(`❌ ${data.detail}`);
+        }
+
+        async function uploadExcel() {
+            const fileInput = document.getElementById('excel-file-input');
+            if (!fileInput.files[0]) return alert("Vui lòng chọn file Excel đã tải về từ máy!");
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            const res = await fetch(`${API_URL}/api/librarian/import-excel`, { method: 'POST', body: formData });
+            const data = await res.json();
+            res.ok ? (alert(`🎉 ${data.message}`), loadShelvesData(), switchTab('tab-map')) : alert(`❌ ${data.detail}`);
+        }
+
+        updateUIAuth();
+        loadShelvesData();
+    </script>
+</body>
+</html>
